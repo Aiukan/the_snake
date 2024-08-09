@@ -168,7 +168,7 @@ class Snake(GameObject):
             self.next_direction = None
 
     def move(self, shrink=False):
-        """Обновляет позицию змейки.
+        """Обновляет массив позиций змейки.
 
         При вызове с агрументом shrink, укорачивает хвост.
 
@@ -214,10 +214,7 @@ class Snake(GameObject):
         return self.positions[0]
 
     def reset(self):
-        """Сбрасывает змейку в начальное состояние.
-
-        Затирает все ячейки предыдущей змейки.
-        """
+        """Сбрасывает змейку в начальное состояние."""
         self.length = 1
         self.positions = [self.position]
         self.direction = choice(DIRECTIONS)
@@ -228,8 +225,7 @@ class Snake(GameObject):
 def main():
     """Основная логика игры.
 
-    Цикл игры разбивается на две части: обработку нажатий (с высокой частотой
-    FRAMES_PER_SECOND) и движение змейки (с частотой SPEED).
+    Движение змейки осуществляется с частотой SPEED.
     """
     # Инициализация PyGame:
     pg.init()
