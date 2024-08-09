@@ -76,7 +76,7 @@ class GameObject:
     Содержит абстрактный метод для отрисовки объекта на игровом поле — draw.
     """
 
-    def __init__(self, body_color):
+    def __init__(self, body_color=None):
         self.border_color = BORDER_COLOR
         self.border_width = 1
         # Позиция объекта на игровом поле
