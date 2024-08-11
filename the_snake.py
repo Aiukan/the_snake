@@ -99,8 +99,8 @@ class GameObject:
         Абстрактный метод.
         """
         raise NotImplementedError(
-            'Метод draw() класса {self.__class__.__name__} '
-            'не имеет реализации.')
+            f'Метод draw() класса {self.__class__.__name__} '
+            f'не имеет реализации.')
 
 
 class Apple(GameObject):
@@ -171,6 +171,8 @@ class Snake(GameObject):
         self.next_direction = None
         # Цвет змейки.
         self.body_color = body_color
+        # Последняя координата для удаления
+        self.last = None
 
     def update_direction(self):
         """Обновляет направление движения змейки."""
@@ -183,15 +185,17 @@ class Snake(GameObject):
 
         Если змейка не съела яблоко на прошлой итерации, то хвост сдвигается.
         """
-        # Удаление лишнего элемента
-        if len(self.positions) > self.length:
-            self.positions.pop()
         x_position, y_position = self.get_head_position()
         x_direction, y_direction = self.direction
         new_position = (
             (x_position + x_direction * GRID_SIZE) % SCREEN_WIDTH,
             (y_position + y_direction * GRID_SIZE) % SCREEN_HEIGHT)
         self.positions.insert(0, new_position)
+        # Удаление лишнего элемента
+        if len(self.positions) > self.length:
+            self.last = self.positions.pop()
+        else:
+            self.last = None
 
     def draw(self):
         """Отрисовывает змейку на экране.
@@ -201,14 +205,14 @@ class Snake(GameObject):
 
         Если змейка не съела яблоко, то её хвост затирается.
         """
+        # Затирание лишнего элемента.
+        if self.last:
+            last_rect = pg.Rect(self.last, (GRID_SIZE, GRID_SIZE))
+            pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
+        # Отрисовка головы.
         rect = pg.Rect(self.get_head_position(), (GRID_SIZE, GRID_SIZE))
         pg.draw.rect(screen, self.body_color, rect)
         pg.draw.rect(screen, self.border_color, rect, self.border_width)
-
-        # Затирание лишнего элемента
-        if len(self.positions) > self.length:
-            last_rect = pg.Rect(self.positions[-1], (GRID_SIZE, GRID_SIZE))
-            pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
 
     def get_head_position(self):
         """Возвращает позицию головы змейки."""
@@ -220,6 +224,7 @@ class Snake(GameObject):
         self.positions = [self.position]
         self.direction = choice(DIRECTIONS)
         self.next_direction = None
+        self.last = None
 
 
 def main():
