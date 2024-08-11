@@ -27,6 +27,9 @@ BOARD_BACKGROUND_COLOR = (0, 0, 0)
 # Цвет границы ячейки
 BORDER_COLOR = (93, 216, 228)
 
+# Ширина границы ячейки.
+BORDER_WIDTH = 1
+
 # Цвет яблока
 APPLE_COLOR = (255, 0, 0)
 
@@ -72,24 +75,32 @@ def handle_keys(game_object):
 class GameObject:
     """Это базовый класс, от которого наследуются другие игровые объекты.
 
-    Он содержит общие атрибуты игровых объектов — позицию и цвет объекта.
+    Он содержит общие атрибуты игровых объектов — позицию и цвета объекта.
     Содержит абстрактный метод для отрисовки объекта на игровом поле — draw.
     """
 
-    def __init__(self, body_color=None):
-        self.border_color = BORDER_COLOR
-        self.border_width = 1
-        # Позиция объекта на игровом поле
-        self.position = CENTER_POSITION
+    def __init__(
+            self,
+            body_color=None,
+            border_color=BORDER_COLOR,
+            border_width=BORDER_WIDTH):
         # Цвет объекта
         self.body_color = body_color
+        # Цвет границы объекта.
+        self.border_color = border_color
+        # Ширина границы объекта.
+        self.border_width = border_width
+        # Позиция объекта на игровом поле
+        self.position = CENTER_POSITION
 
     def draw(self):
         """Определяет, как объект отрисовывается на экране.
 
         Абстрактный метод.
         """
-        raise NotImplementedError('GameObject.draw() не имеет реализации.')
+        raise NotImplementedError(
+            'Метод draw() класса {self.__class__.__name__} '
+            'не имеет реализации.')
 
 
 class Apple(GameObject):
@@ -105,9 +116,10 @@ class Apple(GameObject):
 
     def __init__(
             self,
-            body_color=APPLE_COLOR):
-        # Задает цвет яблока и начальное положение в центре экрана.
-        super().__init__(body_color)
+            body_color=APPLE_COLOR,
+            border_color=BORDER_COLOR,
+            border_width=BORDER_WIDTH):
+        super().__init__(body_color, border_color, border_width)
         # Переводит положение яблока из центра в случайную незанятую ячейку.
         self.randomize_position()
 
@@ -145,9 +157,10 @@ class Snake(GameObject):
 
     def __init__(
             self,
-            body_color=SNAKE_COLOR):
-        # Задает цвет змейки и начальное положение в центре экрана.
-        super().__init__(body_color)
+            body_color=SNAKE_COLOR,
+            border_color=BORDER_COLOR,
+            border_width=BORDER_WIDTH):
+        super().__init__(body_color, border_color, border_width)
         # Длина змейки.
         self.length = 1
         # Список координат сегментов змейки.
@@ -158,8 +171,6 @@ class Snake(GameObject):
         self.next_direction = None
         # Цвет змейки.
         self.body_color = body_color
-        # Хвост змейки, который будет затёрт при вызове draw().
-        self.last = None
 
     def update_direction(self):
         """Обновляет направление движения змейки."""
@@ -167,47 +178,37 @@ class Snake(GameObject):
             self.direction = self.next_direction
             self.next_direction = None
 
-    def move(self, shrink=False):
+    def move(self):
         """Обновляет массив позиций змейки.
 
-        При вызове с агрументом shrink, укорачивает хвост.
-
-        При вызове без shrink, двигает голову вперёд в заданном направлении.
+        Если змейка не съела яблоко на прошлой итерации, то хвост сдвигается.
         """
-        if shrink:
-            self.last = self.positions.pop()
-        else:
-            x_position, y_position = self.get_head_position()
-            x_direction, y_direction = self.direction
-            new_position = (
-                (x_position + x_direction * GRID_SIZE) % SCREEN_WIDTH,
-                (y_position + y_direction * GRID_SIZE) % SCREEN_HEIGHT)
-            self.positions.insert(0, new_position)
+        # Удаление лишнего элемента
+        if len(self.positions) > self.length:
+            self.positions.pop()
+        x_position, y_position = self.get_head_position()
+        x_direction, y_direction = self.direction
+        new_position = (
+            (x_position + x_direction * GRID_SIZE) % SCREEN_WIDTH,
+            (y_position + y_direction * GRID_SIZE) % SCREEN_HEIGHT)
+        self.positions.insert(0, new_position)
 
-    def draw(self, erase=False):
+    def draw(self):
         """Отрисовывает змейку на экране.
 
         Отрисовывается только голова змейки. Внутренние сегменты
         отрисовываются постепенно при увеличении размера змейки.
 
-        При удалении хвоста змейки из списка координат, он затирается.
-
-        Вызов с агрументом erase стирает всю змейку.
+        Если змейка не съела яблоко, то её хвост затирается.
         """
-        if erase:
-            for position in self.positions:
-                erase_rect = pg.Rect(position, (GRID_SIZE, GRID_SIZE))
-                pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, erase_rect)
-        else:
-            rect = pg.Rect(self.get_head_position(), (GRID_SIZE, GRID_SIZE))
-            pg.draw.rect(screen, self.body_color, rect)
-            pg.draw.rect(screen, BORDER_COLOR, rect, 1)
+        rect = pg.Rect(self.get_head_position(), (GRID_SIZE, GRID_SIZE))
+        pg.draw.rect(screen, self.body_color, rect)
+        pg.draw.rect(screen, self.border_color, rect, self.border_width)
 
-            # Затирание последнего сегмента
-            if self.last:
-                last_rect = pg.Rect(self.last, (GRID_SIZE, GRID_SIZE))
-                pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
-                self.last = None
+        # Затирание лишнего элемента
+        if len(self.positions) > self.length:
+            last_rect = pg.Rect(self.positions[-1], (GRID_SIZE, GRID_SIZE))
+            pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
 
     def get_head_position(self):
         """Возвращает позицию головы змейки."""
@@ -219,7 +220,6 @@ class Snake(GameObject):
         self.positions = [self.position]
         self.direction = choice(DIRECTIONS)
         self.next_direction = None
-        self.last = None
 
 
 def main():
@@ -241,18 +241,17 @@ def main():
         snake.update_direction()
         snake.move()
 
-        # При движении змейка "вычищает" свой хвост.
         # Если змейка съедает яблоко, то хвост не передвигается.
         # При столкновении змейки сама с собой, игра начинается заново.
+        # Иначе хвост является лишним и будет затёрт.
         if snake.get_head_position() == apple.position:
             apple.randomize_position(snake.positions)
             snake.length += 1
         elif snake.get_head_position() in snake.positions[1:]:
-            snake.draw(erase=True)
             snake.reset()
+            # Позиция яблока меняется только если оно находилось в центре.
             apple.randomize_position()
-        else:
-            snake.move(shrink=True)
+            screen.fill(BOARD_BACKGROUND_COLOR)
 
         snake.draw()
         apple.draw()
